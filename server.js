@@ -1,62 +1,40 @@
+require("dotenv").config();
 const express = require("express");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
 const cors = require("cors");
-
-require("dotenv").config(); // Optional, tapi tetap boleh kalau kamu develop lokal
-
+const path = require("path");
 const app = express();
-const PORT = process.env.PORT || 3000;
+const Tracker = require("./model");
 
-// Middleware
 app.use(cors());
-app.use(bodyParser.json({ limit: "10mb" }));
-app.use(express.static("public")); // Pastikan index.html ada di folder 'public'
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname)));
 
-// MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ Terhubung ke MongoDB"))
-  .catch((err) => console.error("❌ Gagal konek MongoDB:", err));
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Schema dan Model
-const logSchema = new mongoose.Schema({
-  latitude: Number,
-  longitude: Number,
-  photo: String,
-  timestamp: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-const Log = mongoose.model("Log", logSchema);
-
-// Endpoint upload
 app.post("/upload", async (req, res) => {
+  const { latitude, longitude, photo } = req.body;
+
   try {
-    const { latitude, longitude, photo } = req.body;
-    console.log("📦 Data masuk:", { latitude, longitude, photo: photo?.slice(0, 30) + "..." });
-
-    if (!latitude || !longitude || !photo) {
-      console.log("⚠️ Data tidak lengkap!");
-      return res.status(400).json({ message: "Data tidak lengkap" });
-    }
-
-    const newLog = new Log({ latitude, longitude, photo });
-    await newLog.save();
-    console.log("✅ Data disimpan ke MongoDB");
-    res.status(200).json({ message: "Data disimpan!" });
-  } catch (error) {
-    console.error("❌ Error di /upload:", error);
-    res.status(500).json({ message: "Server error" });
+    const newData = new Tracker({ latitude, longitude, photo });
+    await newData.save();
+    res.status(200).json({ message: "Data saved successfully" });
+  } catch (err) {
+    console.error("❌ Error saving data:", err);
+    res.status(500).json({ error: "Failed to save data" });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server jalan di port ${PORT}`);
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
