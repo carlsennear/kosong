@@ -1,9 +1,13 @@
 const mongoose = require("mongoose");
 
-const logSchema = new mongoose.Schema({
-  latitude: String,
-  longitude: String,
-  photo: String, // base64 string
-}, { timestamps: true });
+const TrackerSchema = new mongoose.Schema({
+  latitude: Number,
+  longitude: Number,
+  photo: String,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-module.exports = mongoose.model("Log", logSchema);
+module.exports = mongoose.model("Tracker", TrackerSchema);
